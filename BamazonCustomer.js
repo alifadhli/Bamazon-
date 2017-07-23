@@ -35,7 +35,7 @@ function selection() {
 		inquirer.prompt([
 			{
 				type: "number",
-				message: "What would you like to Buy? (the Product ID)",
+				message: "Which item would you like to purchase? (the Product ID)",
 				name: "itemNumber"
 			},
 			{
@@ -45,22 +45,22 @@ function selection() {
 			},
 		]).then(function (user) {
 
-			connection.query('SELECT * FROM products JOIN departments ON products.DepartmentName = departments.DepartmentName WHERE itemID = ?', user.itemNumber, function(err, res) {
+			connection.query('SELECT * FROM products JOIN departments ON products.DepartmentName = departments.DepartmentName', function(err, res) {
 		    	if (err) throw err;
 
-		    	if((res['StockQuantity']) > (user.howMany)) {
-		    		var newQuantity = parseInt(res['StockQuantity']) - parseInt(user.howMany);
-		    		var total = parseFloat(user.howMany) * parseFloat(res[Price]);
+		    	if(res[user.itemNumber - 1].StockQuantity > user.howMany) {
+		    		var newQuantity = parseInt(res[user.itemNumber - 1].StockQuantity) - parseInt(user.howMany);
+		    		var total = parseFloat(user.howMany) * parseFloat(res[user.itemNumber - 1].Price);
 			    	total = total.toFixed(2);
 
-			    	var departmentTotal = parseFloat(total) + parseFloat(res['TotalSales']);
+			    	var departmentTotal = parseFloat(total) + parseFloat(res[user.itemNumber - 1].TotalSales);
 			    	departmentTotal = departmentTotal.toFixed(2);
 
 	    			connection.query("UPDATE departments SET ? WHERE ?", [{
 		    			TotalSales: departmentTotal
 		    		}, {
-		    			DepartmentName: res['DepartmentName']
-		    		}]);
+		    			DepartmentName: res[user.itemNumber - 1].DepartmentName
+		    		}], function(error, results) {});
 
 		    		connection.query("UPDATE products SET ? WHERE ?", [{
 		    			StockQuantity: newQuantity
@@ -69,14 +69,14 @@ function selection() {
 		    		}], function(error, results) {
 		    			if(error) throw error;
 
-			    		console.log("Your order for " + user.howMany + " " + res['ProductName'] +
+			    		console.log("Your order for " + user.howMany + " " + res[user.itemNumber - 1].ProductName +
 			    			"(s) has been placed.");
 			    		console.log("Your total is $" + total);
 			    		orderMore();
 		    		});
 
 		    	} else {
-		    		console.log("We're sorry, we only have " + res['StockQuantity'] + " of that product.");
+		    		console.log("We're sorry, we only have " + res[user.itemNumber - 1].StockQuantity + " of that product.");
 		    		orderMore();
 		    	}	    
 			});
